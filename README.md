@@ -1,0 +1,2 @@
+# Sonata
+Experience your music library the way it was meant to be heard. Sonata is a premium, minimalist audio player crafted for music lovers who demand both stunning design and high-fidelity sound.Say goodbye to cluttered interfaces and streaming distractions. Delivering a seamless, elegant, and powerful offline listening experience.
