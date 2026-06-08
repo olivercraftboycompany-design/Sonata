@@ -1,0 +1,56 @@
+#queueModal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; justify-content: center; align-items: center;
+  z-index: 7000; backdrop-filter: blur(8px);
+}
+#queueModalContent {
+  background: #020617; padding: 25px; border-radius: 15px;
+  width: 600px; max-width: 95vw; color: #fff;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4); 
+  display: flex; flex-direction: column; height: 80vh;
+  border: 1px solid rgba(0, 240, 255, 0.2); position: relative;
+}
+.queue-close-btn {
+  position: absolute; top: 15px; right: 20px;
+  background: none; border: none; color: var(--accent-color);
+  font-size: 1.5rem; cursor: pointer; transition: 0.3s;
+}
+.queue-close-btn:hover { color: #ff4757; transform: rotate(90deg); }
+#queueTrackList {
+  list-style: none; padding: 0; margin-top: 15px;
+  overflow-y: auto; flex: 1; border-radius: 8px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+}
+.queue-item {
+  background: rgba(0,0,0,0.4); padding: 10px 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; gap: 10px; font-size: 0.9rem;
+  transition: 0.2s;
+}
+.queue-item:hover { background: rgba(0, 240, 255, 0.1); }
+.queue-item.playing-now {
+  border-left: 4px solid var(--accent-color);
+  background: rgba(0, 240, 255, 0.15); font-weight: bold;
+}
+.queue-item.drag-over { border-top: 2px dashed var(--accent-color); }
+.queue-drag-handle { cursor: grab; color: #666; padding: 5px; }
+.queue-drag-handle:active { cursor: grabbing; }
+.queue-track-info { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue-actions { display: flex; gap: 8px; align-items: center; }
+.q-btn {
+  background: rgba(255,255,255,0.1); border: none; color: #fff;
+  padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+  transition: 0.2s; display: flex; align-items: center; gap: 4px;
+}
+.q-btn:hover { background: var(--accent-color); color: #000; }
+.q-btn-remove:hover { background: #ff4757; color: #fff; }
+.queue-add-section {
+  margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px;
+}
+.queue-add-section select {
+  flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2); color: #fff; outline: none;
+}
+.queue-add-section select option { background: #020617; }
+#miniNextUpCard, #bpNextUp { cursor: pointer; transition: 0.2s; border-radius: 4px; }
+#miniNextUpCard:hover, #bpNextUp:hover { background: rgba(0, 240, 255, 0.2) !important; padding: 5px; }

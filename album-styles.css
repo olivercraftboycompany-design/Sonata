@@ -1,0 +1,85 @@
+/* Album Creator and Viewer Styles */
+
+.user-album-card {
+  position: relative;
+}
+
+.user-album-card:hover {
+  filter: brightness(1.1);
+}
+
+.album-context-menu button:hover {
+  background: rgba(255,255,255,0.15) !important;
+}
+
+#albumCreatorModal {
+  animation: slideInCenter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideInCenter {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#albumDetailsModal {
+  animation: slideInCenter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.album-song-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+#albumsGrid {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 240, 255, 0.3) rgba(255,255,255,0.05);
+}
+
+#albumsGrid::-webkit-scrollbar {
+  width: 6px;
+}
+
+#albumsGrid::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+}
+
+#albumsGrid::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+}
+
+#albumsGrid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.5);
+}
+
+#albumSongsContainer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 240, 255, 0.3) rgba(255,255,255,0.05);
+}
+
+#albumSongsContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+#albumSongsContainer::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+}
+
+#albumSongsContainer::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 10px;
+}
+
+#albumSongsContainer::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.5);
+}

@@ -1,0 +1,1 @@
+gh repo create <USERNAME>/<REPO> --public --source=. --remote=origin --push

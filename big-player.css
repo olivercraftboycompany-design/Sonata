@@ -1,0 +1,139 @@
+/* Big Player Modal Styles */
+#bigPlayerModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.big-player-container {
+  width: 90%;
+  max-width: 500px;
+  background: #020617;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+  border: 1px solid var(--accent-color);
+  position: relative;
+}
+
+.big-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.big-player-header h2 {
+  color: var(--accent-color);
+  margin: 0;
+}
+
+#closeBigPlayer {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.big-album-art {
+  width: 100%;
+  height: 300px;
+  border-radius: 15px;
+  background: #333;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 5rem;
+  color: var(--accent-color);
+}
+
+.big-track-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.big-track-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 5px;
+}
+
+.big-track-artist {
+  font-size: 1.1rem;
+  color: #aaa;
+}
+
+.big-player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.big-control-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.big-control-btn:hover {
+  color: var(--accent-color);
+}
+
+.big-control-btn.play-pause {
+  width: 60px;
+  height: 60px;
+  background: var(--accent-color);
+  color: #020617;
+}
+
+.big-control-btn.play-pause:hover {
+  background: #0072ff;
+  color: white;
+}
+
+.big-progress-container {
+  margin-bottom: 15px;
+}
+
+.big-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.big-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 3px;
+  width: 0%;
+}
+
+.big-time-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #aaa;
+}

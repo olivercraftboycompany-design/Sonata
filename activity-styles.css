@@ -1,0 +1,40 @@
+#activityModal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+  display: none; justify-content: center; align-items: center;
+  z-index: 6000; backdrop-filter: blur(5px);
+}
+#activityModalContent {
+  background: #020617; padding: 25px; border-radius: 15px;
+  width: 500px; max-width: 95vw; color: #fff;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.4); max-height: 85vh;
+  display: flex; flex-direction: column; position: relative;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.activity-close-btn {
+  position: absolute; top: 15px; right: 20px;
+  background: none; border: none; color: var(--accent-color);
+  font-size: 1.5rem; cursor: pointer; transition: 0.3s;
+}
+.activity-close-btn:hover { color: #ff4757; transform: rotate(90deg); }
+#activityLogList {
+  list-style: none; padding: 0; margin-top: 15px;
+  overflow-y: auto; flex: 1; padding-right: 10px;
+}
+.activity-item {
+  background: rgba(255,255,255,0.05); padding: 12px 15px;
+  border-radius: 8px; margin-bottom: 10px; display: flex;
+  align-items: center; gap: 15px; font-size: 0.9rem;
+  border-left: 4px solid transparent; transition: 0.2s;
+}
+.activity-item:hover { background: rgba(255,255,255,0.1); }
+.act-add { border-left-color: #51cf66; }
+.act-add .act-icon { color: #51cf66; }
+.act-remove { border-left-color: #ff4757; }
+.act-remove .act-icon { color: #ff4757; }
+.act-play { border-left-color: #00f0ff; }
+.act-play .act-icon { color: #00f0ff; }
+.act-icon { font-size: 1.2rem; width: 20px; text-align: center; }
+.act-details { flex: 1; display: flex; flex-direction: column; }
+.act-track { font-weight: bold; color: #fff; }
+.act-action { font-size: 0.8rem; color: #aaa; }
+.act-time { font-size: 0.75rem; color: #888; text-align: right; }

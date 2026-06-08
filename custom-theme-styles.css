@@ -1,0 +1,50 @@
+/* ========================================================= */
+/* CUSTOM COLOR PICKER STYLES                                */
+/* ========================================================= */
+.custom-theme-container {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.custom-theme-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+input[type="color"].custom-color-picker {
+  -webkit-appearance: none;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: transparent;
+}
+
+input[type="color"].custom-color-picker:hover {
+  transform: scale(1.1);
+}
+
+/* Fixes for Chrome/Edge/Safari inner borders */
+input[type="color"].custom-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"].custom-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+/* Fix for Firefox */
+input[type="color"].custom-color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
