@@ -1,28 +1,36 @@
 // xbox-controller-support.js
-// Xbox One / Series controller support + virtual mouse
-// Include this file with: <script src="xbox-controller-support.js"></script>
+// Advanced Xbox controller support + virtual cursor + combos
 
 (function () {
   'use strict';
 
   const GP = {
-    // Xbox button mapping (standard)
     A: 0, B: 1, X: 2, Y: 3,
     LB: 4, RB: 5,
     LT: 6, RT: 7,
     BACK: 8, START: 9,
     LS: 10, RS: 11,
-    DPAD_UP: 12, DPAD_DOWN: 13, DPAD_LEFT: 14, DPAD_RIGHT: 15
+    DPAD_UP: 12, DPAD_DOWN: 13, DPAD_LEFT: 14, DPAD_RIGHT: 15,
+    XBOX: 16 // Home / Guide (browser support may vary)
   };
 
+  const DEADZONE = 0.15;
+  const NAV_REPEAT_MS = 150;
+  const HOLD_REPEAT_MS = 120;
+  const COMBO_COOLDOWN_MS = 350;
+
   let gamepadIndex = null;
-  let lastButtons = {};
   let virtualCursor = null;
   let cursorX = window.innerWidth / 2;
   let cursorY = window.innerHeight / 2;
-  let lastMoveTime = 0;
 
-  // === Virtual Mouse Cursor ===
+  let lastButtons = {};
+  let pressStartedAt = {};
+  let lastRepeatAt = {};
+  let lastComboAt = 0;
+  let lastMoveTime = 0;
+  let polling = false;
+
   function createVirtualCursor() {
     if (virtualCursor) return;
     virtualCursor = document.createElement('div');
@@ -38,7 +46,7 @@
       border-radius: 50%;
       transform: translate(-50%, -50%);
       transition: transform .05s linear;
-      box-shadow: 0 0 15px #00f0ff;
+      box-shadow: 0 0 15px #00f0ff, 0 0 30px rgba(0,240,255,.35);
     `;
     document.body.appendChild(virtualCursor);
     updateCursorPosition();
@@ -58,139 +66,103 @@
   }
 
   function performClick() {
-    if (!virtualCursor) return;
-
     const el = document.elementFromPoint(cursorX, cursorY);
     if (!el) return;
-
-    // Try to click the element or its closest interactive parent
     const target = el.closest('button, .track-item, .playlist-card, a, input, [onclick]') || el;
 
-    // Visual feedback
-    virtualCursor.style.transform = 'translate(-50%, -50%) scale(0.6)';
-    setTimeout(() => {
-      if (virtualCursor) virtualCursor.style.transform = 'translate(-50%, -50%)';
-    }, 120);
+    if (virtualCursor) {
+      virtualCursor.style.transform = 'translate(-50%, -50%) scale(0.6)';
+      setTimeout(() => {
+        if (virtualCursor) virtualCursor.style.transform = 'translate(-50%, -50%)';
+      }, 100);
+    }
 
-    // Trigger click
     target.click();
 
-    // If it's a track item, also try to play it
     if (target.classList.contains('track-item')) {
       const playBtn = target.querySelector('button[title="Play"]');
       if (playBtn) playBtn.click();
     }
   }
 
-  // === Gamepad Helpers ===
   function getGamepad() {
     if (gamepadIndex === null) return null;
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     return pads[gamepadIndex] || null;
   }
 
-  function isButtonPressed(gp, index) {
-    if (!gp || !gp.buttons[index]) return false;
-    const b = gp.buttons[index];
-    return b.pressed || b.value > 0.5;
+  function buttonValue(gp, idx) {
+    if (!gp || !gp.buttons[idx]) return 0;
+    return gp.buttons[idx].value ?? (gp.buttons[idx].pressed ? 1 : 0);
   }
 
-  function wasJustPressed(gp, index) {
-    const pressed = isButtonPressed(gp, index);
-    const wasPressed = lastButtons[index] || false;
-    lastButtons[index] = pressed;
-    return pressed && !wasPressed;
+  function isPressed(gp, idx, threshold = 0.5) {
+    return buttonValue(gp, idx) >= threshold;
   }
 
-  // === Main Control Logic ===
-  function handleXboxControls() {
-    const gp = getGamepad();
-    if (!gp) return;
+  function justPressed(gp, idx, threshold = 0.5) {
+    const now = isPressed(gp, idx, threshold);
+    const prev = !!lastButtons[idx];
+    lastButtons[idx] = now;
+    if (now && !prev) {
+      pressStartedAt[idx] = Date.now();
+      lastRepeatAt[idx] = 0;
+      return true;
+    }
+    if (!now && prev) {
+      pressStartedAt[idx] = 0;
+      lastRepeatAt[idx] = 0;
+    }
+    return false;
+  }
 
+  function heldRepeat(gp, idx, threshold = 0.5, interval = HOLD_REPEAT_MS) {
+    if (!isPressed(gp, idx, threshold)) return false;
     const now = Date.now();
-
-    // === Right Stick = Mouse ===
-    const rx = gp.axes[2] || 0;
-    const ry = gp.axes[3] || 0;
-    if (Math.abs(rx) > 0.15 || Math.abs(ry) > 0.15) {
-      moveCursor(rx, ry);
+    if (!pressStartedAt[idx]) pressStartedAt[idx] = now;
+    if (!lastRepeatAt[idx] || now - lastRepeatAt[idx] >= interval) {
+      lastRepeatAt[idx] = now;
+      return true;
     }
+    return false;
+  }
 
-    // === Left Stick = UI Navigation ===
-    const lx = gp.axes[0] || 0;
-    const ly = gp.axes[1] || 0;
+  function axis(gp, idx) {
+    const v = gp?.axes?.[idx] ?? 0;
+    return Math.abs(v) < DEADZONE ? 0 : v;
+  }
 
-    if (now - lastMoveTime > 180) {
-      const trackList = document.getElementById('trackList');
-      const playlistContainer = document.getElementById('playlistContainer');
+  function seekBy(seconds) {
+    const p = document.getElementById('mainAudioPlayer');
+    if (!p || !p.duration) return;
+    p.currentTime = Math.max(0, Math.min(p.duration, p.currentTime + seconds));
+  }
 
-      if (Math.abs(ly) > 0.6) {
-        lastMoveTime = now;
-        const direction = ly > 0 ? 'down' : 'up';
+  function changeVolume(delta) {
+    const p = document.getElementById('mainAudioPlayer');
+    if (!p) return;
+    p.volume = Math.max(0, Math.min(1, p.volume + delta));
+  }
 
-        if (trackList && trackList.style.display !== 'none') {
-          navigateTrackList(direction);
-        } else if (playlistContainer) {
-          navigatePlaylists(direction);
-        }
-      }
-    }
+  function playPause() {
+    const p = document.getElementById('mainAudioPlayer');
+    if (!p) return;
+    if (p.paused) p.play();
+    else p.pause();
+  }
 
-    // === Face Buttons ===
-    if (wasJustPressed(gp, GP.A)) {
-      performClick(); // Click whatever the cursor is over
-    }
+  function nextTrack() {
+    (document.getElementById('topNextBtn') || document.getElementById('miniNextBtn'))?.click();
+  }
 
-    if (wasJustPressed(gp, GP.B)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player) player.pause();
-    }
+  function prevTrack() {
+    (document.getElementById('topPrevBtn') || document.getElementById('miniPrevBtn'))?.click();
+  }
 
-    if (wasJustPressed(gp, GP.X)) {
-      // Next track
-      const nextBtn = document.getElementById('topNextBtn') || document.getElementById('miniNextBtn');
-      if (nextBtn) nextBtn.click();
-    }
-
-    if (wasJustPressed(gp, GP.Y)) {
-      // Previous track
-      const prevBtn = document.getElementById('topPrevBtn') || document.getElementById('miniPrevBtn');
-      if (prevBtn) prevBtn.click();
-    }
-
-    // === Shoulder Buttons ===
-    if (wasJustPressed(gp, GP.RB)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player && player.duration) {
-        player.currentTime = Math.min(player.currentTime + 10, player.duration);
-      }
-    }
-
-    if (wasJustPressed(gp, GP.LB)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player) {
-        player.currentTime = Math.max(player.currentTime - 10, 0);
-      }
-    }
-
-    // === D-Pad ===
-    if (wasJustPressed(gp, GP.DPAD_UP)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player) player.volume = Math.min(1, player.volume + 0.1);
-    }
-    if (wasJustPressed(gp, GP.DPAD_DOWN)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player) player.volume = Math.max(0, player.volume - 0.1);
-    }
-
-    // === Start Button = Play/Pause ===
-    if (wasJustPressed(gp, GP.START)) {
-      const player = document.getElementById('mainAudioPlayer');
-      if (player) {
-        if (player.paused) player.play();
-        else player.pause();
-      }
-    }
+  function resetCursorCenter() {
+    cursorX = window.innerWidth / 2;
+    cursorY = window.innerHeight / 2;
+    updateCursorPosition();
   }
 
   function navigateTrackList(direction) {
@@ -198,90 +170,195 @@
     if (!items.length) return;
 
     let currentIndex = -1;
-    items.forEach((item, i) => {
-      if (item.classList.contains('playing')) currentIndex = i;
+    items.forEach((it, i) => {
+      if (it.classList.contains('playing')) currentIndex = i;
     });
 
     let nextIndex = currentIndex;
     if (direction === 'down') nextIndex = Math.min(items.length - 1, currentIndex + 1);
     else nextIndex = Math.max(0, currentIndex - 1);
-
-    if (nextIndex === currentIndex && currentIndex === -1) nextIndex = 0;
+    if (currentIndex === -1) nextIndex = 0;
 
     const target = items[nextIndex];
-    if (target) {
-      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      items.forEach(el => el.classList.remove('playing'));
-      target.classList.add('playing');
-
-      // Auto-play on selection with A (handled by virtual cursor click)
-      // Store reference so A button can trigger it
-      window.__xboxSelectedTrack = target.id.replace('li-', '');
-    }
+    if (!target) return;
+    items.forEach(el => {
+      el.classList.remove('playing');
+      el.style.outline = '';
+    });
+    target.classList.add('playing');
+    target.style.outline = '2px solid #00f0ff';
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
 
   function navigatePlaylists(direction) {
     const cards = document.querySelectorAll('#playlistContainer .playlist-card');
     if (!cards.length) return;
 
-    // Simple highlight navigation
     let active = document.querySelector('.playlist-card.xbox-active');
-    if (!active) {
-      active = cards[0];
-      active.classList.add('xbox-active');
-      active.style.outline = '2px solid #00f0ff';
-    } else {
-      active.style.outline = '';
+    let idx = 0;
+    if (active) {
+      idx = Array.from(cards).indexOf(active);
       active.classList.remove('xbox-active');
+      active.style.outline = '';
+    }
+    idx = direction === 'down' ? Math.min(cards.length - 1, idx + 1) : Math.max(0, idx - 1);
 
-      let idx = Array.from(cards).indexOf(active);
-      idx = direction === 'down' ? Math.min(cards.length - 1, idx + 1) : Math.max(0, idx - 1);
-      active = cards[idx];
-      active.classList.add('xbox-active');
-      active.style.outline = '2px solid #00f0ff';
-      active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const next = cards[idx];
+    next.classList.add('xbox-active');
+    next.style.outline = '2px solid #00f0ff';
+    next.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function combo(gp, btns) {
+    return btns.every(b => isPressed(gp, b));
+  }
+
+  function handleCombos(gp) {
+    const now = Date.now();
+    if (now - lastComboAt < COMBO_COOLDOWN_MS) return false;
+
+    // START + BACK => open settings
+    if (combo(gp, [GP.START, GP.BACK])) {
+      document.getElementById('nav-settings')?.click();
+      lastComboAt = now;
+      return true;
+    }
+
+    // LB + RB => toggle repeat
+    if (combo(gp, [GP.LB, GP.RB])) {
+      document.getElementById('toggleRepeatBtn')?.click();
+      lastComboAt = now;
+      return true;
+    }
+
+    // LT + RT => mute/unmute
+    if (combo(gp, [GP.LT, GP.RT])) {
+      const p = document.getElementById('mainAudioPlayer');
+      if (p) p.muted = !p.muted;
+      lastComboAt = now;
+      return true;
+    }
+
+    // A + X => next track
+    if (combo(gp, [GP.A, GP.X])) {
+      nextTrack();
+      lastComboAt = now;
+      return true;
+    }
+
+    // B + Y => previous track
+    if (combo(gp, [GP.B, GP.Y])) {
+      prevTrack();
+      lastComboAt = now;
+      return true;
+    }
+
+    // LS + RS => reset cursor
+    if (combo(gp, [GP.LS, GP.RS])) {
+      resetCursorCenter();
+      lastComboAt = now;
+      return true;
+    }
+
+    // XBOX + A => open achievements
+    if (combo(gp, [GP.XBOX, GP.A])) {
+      document.getElementById('achievementPageLinkBtn')?.click();
+      lastComboAt = now;
+      return true;
+    }
+
+    return false;
+  }
+
+  function handleXboxControls() {
+    const gp = getGamepad();
+    if (!gp) return;
+
+    if (handleCombos(gp)) return;
+
+    const now = Date.now();
+
+    // Right stick => virtual mouse
+    const rx = axis(gp, 2);
+    const ry = axis(gp, 3);
+    if (rx || ry) moveCursor(rx, ry);
+
+    // Left stick => list navigation
+    const ly = axis(gp, 1);
+    if (Math.abs(ly) > 0.6 && now - lastMoveTime > NAV_REPEAT_MS) {
+      lastMoveTime = now;
+      const direction = ly > 0 ? 'down' : 'up';
+      const trackList = document.getElementById('trackList');
+      if (trackList && trackList.offsetParent !== null) navigateTrackList(direction);
+      else navigatePlaylists(direction);
+    }
+
+    // Face buttons
+    if (justPressed(gp, GP.A)) performClick();
+    if (justPressed(gp, GP.B)) document.getElementById('mainAudioPlayer')?.pause();
+    if (justPressed(gp, GP.X)) nextTrack();
+    if (justPressed(gp, GP.Y)) prevTrack();
+
+    // Shoulders (tap) + hold behavior
+    if (justPressed(gp, GP.LB) || heldRepeat(gp, GP.LB)) seekBy(-10);
+    if (justPressed(gp, GP.RB) || heldRepeat(gp, GP.RB)) seekBy(10);
+
+    // Triggers analog seek
+    const lt = buttonValue(gp, GP.LT);
+    const rt = buttonValue(gp, GP.RT);
+    if (lt > 0.2) seekBy(-lt * 2.2);
+    if (rt > 0.2) seekBy(rt * 2.2);
+
+    // Dpad
+    if (justPressed(gp, GP.DPAD_UP) || heldRepeat(gp, GP.DPAD_UP)) changeVolume(0.05);
+    if (justPressed(gp, GP.DPAD_DOWN) || heldRepeat(gp, GP.DPAD_DOWN)) changeVolume(-0.05);
+    if (justPressed(gp, GP.DPAD_LEFT)) seekBy(-5);
+    if (justPressed(gp, GP.DPAD_RIGHT)) seekBy(5);
+
+    // Menu buttons
+    if (justPressed(gp, GP.START)) playPause();
+    if (justPressed(gp, GP.BACK)) document.getElementById('nav-audio')?.click();
+
+    // Stick clicks
+    if (justPressed(gp, GP.LS)) resetCursorCenter();
+    if (justPressed(gp, GP.RS)) playPause();
+
+    // Xbox / Home button (if browser exposes it)
+    if (justPressed(gp, GP.XBOX)) {
+      document.getElementById('achievementPageLinkBtn')?.click();
     }
   }
 
-  // === Gamepad Connection Handling ===
   function onGamepadConnected(e) {
     gamepadIndex = e.gamepad.index;
-    console.log('%c[Xbox Controller] Connected:', 'color:#00f0ff', e.gamepad.id);
     createVirtualCursor();
     startPolling();
+    console.log('%c[Xbox] Connected:', 'color:#00f0ff', e.gamepad.id);
   }
 
   function onGamepadDisconnected(e) {
-    if (e.gamepad.index === gamepadIndex) {
-      gamepadIndex = null;
-      console.log('%c[Xbox Controller] Disconnected', 'color:#ff4757');
-      if (virtualCursor) {
-        virtualCursor.remove();
-        virtualCursor = null;
-      }
+    if (e.gamepad.index !== gamepadIndex) return;
+    gamepadIndex = null;
+    if (virtualCursor) {
+      virtualCursor.remove();
+      virtualCursor = null;
     }
+    console.log('%c[Xbox] Disconnected', 'color:#ff4757');
   }
 
-  let polling = false;
   function startPolling() {
     if (polling) return;
     polling = true;
-
-    function loop() {
-      const gp = getGamepad();
-      if (gp) {
-        handleXboxControls();
-      }
+    const loop = () => {
+      if (getGamepad()) handleXboxControls();
       requestAnimationFrame(loop);
-    }
+    };
     loop();
   }
 
-  // === Initialization ===
   window.addEventListener('gamepadconnected', onGamepadConnected);
   window.addEventListener('gamepaddisconnected', onGamepadDisconnected);
 
-  // Auto-detect already connected controllers
   window.addEventListener('load', () => {
     setTimeout(() => {
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -290,13 +367,10 @@
           gamepadIndex = i;
           createVirtualCursor();
           startPolling();
-          console.log('%c[Xbox Controller] Auto-detected on load', 'color:#51cf66');
+          console.log('%c[Xbox] Auto-detected', 'color:#51cf66');
           break;
         }
       }
-    }, 1200);
+    }, 700);
   });
-
-  // Keyboard fallback hint (for development)
-  console.log('%c[Xbox Controller Support] Loaded. Use an Xbox controller for navigation + virtual mouse.', 'color:#888');
 })();
