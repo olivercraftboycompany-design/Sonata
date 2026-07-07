@@ -1,142 +1,91 @@
-/* ========================================================= /
-/ FULL-WIDTH BOTTOM PLAYER MODE /
-/ ========================================================= */
-/* Body padding adjustment so content doesn't hide behind the bar */
+/* bottom-bar-player.css */
+
+/* Prevent content from being hidden behind the bottom bar */
 body.bottom-bar-active .main {
-padding-bottom: 90px !important;
+    padding-bottom: 90px !important;
 }
-/* Adjust floating action buttons so they don't overlap the new bottom bar */
+
+/* Redesign the Floating Mini Player into a Fixed Bottom Bar */
+body.bottom-bar-active #miniPlayerCard {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 80px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(2, 6, 23, 0.98) !important;
+    backdrop-filter: blur(25px) !important;
+    padding: 0 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    z-index: 9999 !important;
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5) !important;
+    transform: none !important;
+}
+
+/* Adjust the artwork size in bar mode */
+body.bottom-bar-active .mini-player-artwork {
+    width: 55px !important;
+    height: 55px !important;
+    border-radius: 6px !important;
+}
+
+/* Adjust Info placement */
+body.bottom-bar-active .mini-player-info {
+    margin-left: 15px !important;
+    flex: 1 !important;
+}
+
+/* Ensure controls stay centered */
+body.bottom-bar-active .mini-player-controls {
+    flex-direction: row !important;
+    gap: 20px !important;
+    margin-right: 0 !important;
+}
+
+/* Move progress bar to the very top edge of the player bar */
+body.bottom-bar-active .mini-player-progress-bar {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 4px !important;
+    border-radius: 0 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Floating buttons adjustment so they don't overlap */
 body.bottom-bar-active #ai-fab,
 body.bottom-bar-active #import-floating-btn,
-body.bottom-bar-active #studioToolsBtn {
-bottom: 95px !important;
+body.bottom-bar-active #studioToolsBtn,
+body.bottom-bar-active .theme-switcher {
+    bottom: 95px !important;
 }
-body.bottom-bar-active #ai-chat-window {
-bottom: 155px !important;
-}
-/* Main Mini Player Overrides */
-body.bottom-bar-active #miniPlayerCard {
-position: fixed !important;
-bottom: 0 !important;
-left: 0 !important;
-right: 0 !important;
-width: 100% !important;
-max-width: 100% !important;
-height: 75px !important;
-border-radius: 0 !important;
-border: none !important;
-border-top: 1px solid rgba(255,255,255,0.1) !important;
-background: rgba(2, 6, 23, 0.98) !important;
-backdrop-filter: blur(20px) !important;
-padding: 0 20px !important;
-display: flex !important;
-align-items: center !important;
-justify-content: space-between !important;
-z-index: 9999 !important;
-box-shadow: 0 -5px 25px rgba(0,0,0,0.5) !important;
-}
-/* Left Section Wrapper (Injected via JS) /
-body.bottom-bar-active .mini-left-wrapper {
-display: flex !important;
-align-items: center !important;
-gap: 15px !important;
-flex: 1 !important;
-min-width: 0 !important; / Prevents overflow */
-}
-/* Artwork */
-body.bottom-bar-active .mini-player-artwork {
-width: 50px !important;
-height: 50px !important;
-border-radius: 6px !important;
-}
-/* Track Info */
-body.bottom-bar-active .mini-player-info {
-flex: none !important;
-max-width: 250px !important;
-}
-body.bottom-bar-active .mini-player-title {
-font-size: 0.95rem !important;
-}
-body.bottom-bar-active .mini-player-artist {
-font-size: 0.75rem !important;
-}
-/* Hide the "Next Up" card to save horizontal space in bottom bar /
-body.bottom-bar-active #miniNextUpCard {
-display: none !important;
-}
-/ Hide timestamps injected by previous scripts to keep it minimal */
-body.bottom-bar-active #miniTimeDisplay {
-display: none !important;
-}
-/* Controls (Center & Right) /
-body.bottom-bar-active .mini-player-controls {
-flex: 2 !important;
-display: flex !important;
-flex-direction: row !important; / Overrides the FF/Rewind script */
-justify-content: center !important;
-align-items: center !important;
-gap: 15px !important;
-margin-right: 0 !important;
-}
-/* Override the row-stacking from the fast-forward script */
-body.bottom-bar-active .mini-player-controls > div {
-display: flex !important;
-flex-direction: row !important;
-align-items: center !important;
-gap: 15px !important;
-width: auto !important;
-}
-body.bottom-bar-active .mini-player-controls button {
-font-size: 1.1rem !important;
-}
-body.bottom-bar-active .mini-player-controls .play-pause-btn {
-width: 45px !important;
-height: 45px !important;
-font-size: 1.2rem !important;
-}
-/* Progress Bar (Spans across the very top edge of the player) */
-body.bottom-bar-active .mini-player-progress-bar {
-position: absolute !important;
-top: 0 !important;
-bottom: auto !important;
-left: 0 !important;
-width: 100% !important;
-height: 3px !important;
-border-radius: 0 !important;
-background: rgba(255,255,255,0.1) !important;
-}
-body.bottom-bar-active .mini-player-progress-bar:hover {
-height: 8px !important;
-}
-body.bottom-bar-active .mini-player-progress-fill {
-border-radius: 0 !important;
-box-shadow: 0 0 10px var(--accent-color) !important;
-}
-/* --- MOBILE RESPONSIVENESS --- /
+
+/* Mobile Fixes for Bottom Bar */
 @media (max-width: 768px) {
-body.bottom-bar-active #miniPlayerCard {
-height: 65px !important;
-padding: 0 10px !important;
-}
-body.bottom-bar-active .mini-player-artwork {
-width: 40px !important;
-height: 40px !important;
-}
-body.bottom-bar-active .mini-player-info {
-max-width: 120px !important;
-}
-body.bottom-bar-active .mini-player-controls {
-flex: 1 !important;
-justify-content: flex-end !important;
-gap: 8px !important;
-}
-/ Hide the extra 10s skip texts on mobile to save space */
-body.bottom-bar-active #miniRewindBtn span,
-body.bottom-bar-active #miniFFBtn span {
-display: none !important;
-}
-body.bottom-bar-active .mini-player-controls .play-pause-btn {
-width: 38px !important;
-height: 38px !important;
-}
+    body.bottom-bar-active #miniPlayerCard {
+        height: 70px !important;
+        padding: 0 15px !important;
+    }
+    
+    body.bottom-bar-active .mini-player-info {
+        max-width: 150px !important;
+    }
+    
+    body.bottom-bar-active .mini-player-controls {
+        gap: 10px !important;
+    }
+    
+    /* Hide extra buttons on mobile bar to save space */
+    body.bottom-bar-active #miniRewindBtn,
+    body.bottom-bar-active #miniFFBtn,
+    body.bottom-bar-active #miniRepeatBtn {
+        display: none !important;
+    }
 }
