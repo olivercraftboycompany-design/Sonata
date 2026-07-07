@@ -1,130 +1,87 @@
-/* ========================================================= */
-/* UPDATED BOTTOM BAR PLAYER - MOBILE OPTIMIZED V2           */
-/* ========================================================= */
+// bottom-bar-miniplayer.js
 
-/* Desktop / General Settings */
-body.bottom-bar-active .main {
-    padding-bottom: 95px !important;
-}
-
-body.bottom-bar-active #miniPlayerCard {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 90px !important; /* Slightly taller for better spacing */
-    border-radius: 0 !important;
-    border: none !important;
-    border-top: 1px solid rgba(0, 240, 255, 0.3) !important;
-    background: rgba(2, 6, 23, 0.98) !important;
-    backdrop-filter: blur(25px) !important;
-    padding: 0 30px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    z-index: 9999 !important;
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.7) !important;
-    transform: none !important;
-}
-
-/* Move progress bar to the very top edge */
-body.bottom-bar-active .mini-player-progress-bar {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 5px !important;
-    border-radius: 0 !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Position Timestamps relative to the progress bar */
-body.bottom-bar-active #miniTimeDisplay {
-    position: absolute !important;
-    top: 8px !important;
-    width: calc(100% - 40px) !important;
-    padding: 0 20px !important;
-}
-
-/* Floating buttons adjustment (Higher to clear the bigger bar) */
-body.bottom-bar-active #ai-fab,
-body.bottom-bar-active #import-floating-btn,
-body.bottom-bar-active #studioToolsBtn,
-body.bottom-bar-active .theme-switcher,
-body.bottom-bar-active #achievementPageLinkBtn {
-    bottom: 130px !important; /* Raised further */
-}
-
-/* ========================================================= */
-/* MOBILE SPECIFIC OVERRIDES (Bigger & Uncluttered)          */
-/* ========================================================= */
-@media (max-width: 768px) {
-    /* Increase body padding for the bigger mobile bar */
-    body.bottom-bar-active .main {
-        padding-bottom: 140px !important;
+window.addEventListener('load', () => {
+    // 1. Add Toggle to Settings
+    const audioSettingsSection = document.querySelectorAll('.settings-section')[2];
+    
+    if (audioSettingsSection && !document.getElementById('bottomBarToggle')) {
+        const toggleHTML = `
+            <div class="custom-theme-container" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top:15px; padding-top:15px;">
+                <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
+                    <input type="checkbox" id="bottomBarToggle" style="width:20px; height:20px; accent-color:var(--accent-color);" /> 
+                    <div style="margin-left: 15px;">
+                        <span style="color: var(--accent-color); font-weight: 800; font-size: 1rem;"><i class="fas fa-window-maximize"></i> Bottom Bar Player</span><br>
+                        <span style="font-size: 0.75rem; color: #aaa;">Enables the Spotify-style fixed bottom bar. Optimized for mobile use.</span>
+                    </div>
+                </label>
+            </div>
+        `;
+        audioSettingsSection.insertAdjacentHTML('beforeend', toggleHTML);
     }
 
-    body.bottom-bar-active #miniPlayerCard {
-        height: 125px !important; /* Much bigger height for mobile */
-        flex-direction: column !important; /* Stack info and controls */
-        justify-content: center !important;
-        padding: 10px 15px !important;
+    const bottomBarToggle = document.getElementById('bottomBarToggle');
+    if (!bottomBarToggle) return;
+
+    // Apply or Remove the Class
+    function applyBottomBarLayout(active) {
+        if (active) {
+            document.body.classList.add('bottom-bar-active');
+        } else {
+            document.body.classList.remove('bottom-bar-active');
+        }
     }
 
-    /* Top Tier: Artwork and Track Name */
-    body.bottom-bar-active .mini-player-info {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 10px 0 5px 0 !important;
-        display: flex !important;
-        align-items: center !important;
+    // --- Safety Check: Hide behind Modals & Big Player ---
+    function syncLayerVisibility() {
+        const settings = document.getElementById('settingsModal');
+        const bigPlayer = document.getElementById('bigPlayerScreen');
+        const login = document.getElementById('loginModal');
+        const playlistModal = document.getElementById('playlistModal');
+
+        // Check if any major UI is open
+        const isSettingsOpen = settings && settings.style.display === 'flex';
+        const isBigPlayerOpen = bigPlayer && bigPlayer.classList.contains('show');
+        const isLoginOpen = login && login.style.display === 'flex';
+        const isPlaylistOpen = playlistModal && playlistModal.style.display === 'flex';
+
+        if (isSettingsOpen || isBigPlayerOpen || isLoginOpen || isPlaylistOpen) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+        }
     }
 
-    body.bottom-bar-active .mini-player-artwork {
-        width: 45px !important;
-        height: 45px !important;
+    // Run visibility check frequently
+    setInterval(syncLayerVisibility, 200);
+
+    bottomBarToggle.addEventListener('change', (e) => {
+        applyBottomBarLayout(e.target.checked);
+    });
+
+    // Save Preference
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) {
+        const originalOnClick = saveSettingsBtn.onclick;
+        saveSettingsBtn.onclick = function() {
+            if (typeof originalOnClick === 'function') originalOnClick.call(this);
+            let userEmail = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).email : null;
+            let settingsKey = userEmail ? `settings_${userEmail}` : `settings_guest`;
+            let settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+            settings.useBottomBar = bottomBarToggle.checked;
+            localStorage.setItem(settingsKey, JSON.stringify(settings));
+        };
     }
 
-    body.bottom-bar-active .mini-player-title {
-        font-size: 1rem !important;
+    // Restore on Load
+    function restoreBottomBar() {
+        let userEmail = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).email : null;
+        let settingsKey = userEmail ? `settings_${userEmail}` : `settings_guest`;
+        let settings = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+        if (settings.useBottomBar) {
+            bottomBarToggle.checked = true;
+            applyBottomBarLayout(true);
+        }
     }
 
-    /* Bottom Tier: Controls (All Buttons Visible) */
-    body.bottom-bar-active .mini-player-controls {
-        width: 100% !important;
-        justify-content: space-around !important;
-        padding-bottom: 5px !important;
-        display: flex !important;
-        flex-direction: row !important; /* Ensure they stay in a row */
-    }
-
-    /* Make sure buttons are large enough to touch */
-    body.bottom-bar-active .mini-player-controls button {
-        font-size: 1.2rem !important;
-        display: flex !important; /* Force show the buttons we hid before */
-        opacity: 1 !important;
-        visibility: visible !important;
-    }
-
-    body.bottom-bar-active .mini-player-controls .play-pause-btn {
-        width: 45px !important;
-        height: 45px !important;
-        background: var(--accent-color) !important;
-        color: #000 !important;
-    }
-
-    /* Fix the "Time Thing" (Timestamps) so they don't overlap */
-    body.bottom-bar-active #miniTimeDisplay {
-        top: 6px !important;
-        font-size: 0.7rem !important;
-        display: flex !important;
-        justify-content: space-between !important;
-    }
-
-    /* Hide the "Next Up" text on mobile bar to keep it clean */
-    body.bottom-bar-active #miniNextUpCard {
-        display: none !important;
-    }
-}
+    setTimeout(restoreBottomBar, 200);
+});
