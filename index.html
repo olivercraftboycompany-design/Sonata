@@ -7237,6 +7237,7 @@ window.addEventListener('load', () => {
   const bpCloseBtn = document.getElementById('bpCloseBtn');
   const miniArtworks = document.querySelectorAll('.mini-player-artwork');
 
+  // Control Elements
   const bpPlayPause = document.getElementById('bpPlayPause');
   const bpVolSlider = document.getElementById('bpVolSlider');
   const bpShuffle = document.getElementById('bpShuffle');
@@ -7262,6 +7263,7 @@ window.addEventListener('load', () => {
 
   // 2. METADATA & UI REFRESH
   function updateBigPlayerMetadata() {
+    // Safety check for your external variables
     if (typeof currentQueue === 'undefined' || typeof currentTrackIndex === 'undefined') return;
     
     const trackId = currentQueue[currentTrackIndex];
@@ -7275,7 +7277,7 @@ window.addEventListener('load', () => {
       document.getElementById('bpArt').src = imgSrc;
       document.getElementById('bpBackdrop').style.backgroundImage = `url('${imgSrc}')`;
 
-      // Next Up Logic
+      // Improved Next Up Logic
       let nextIdx = (currentTrackIndex + 1) % currentQueue.length;
       const nextTrackId = currentQueue[nextIdx];
       const nextTrack = (window.allTracks || []).find(t => t.id === nextTrackId);
@@ -7284,74 +7286,46 @@ window.addEventListener('load', () => {
   }
 
   function syncUIState() {
+    // Play/Pause Icon
     bpPlayPause.innerHTML = mainPlayer.paused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+    
+    // Volume
     bpVolSlider.value = mainPlayer.volume;
 
-    const mainShuffle = document.getElementById('shuffleBtn');
+    // Sync active states for Shuffle/Repeat (assumes your main app uses these classes)
+    const mainShuffle = document.getElementById('shuffleBtn'); // Change ID to match your main app
     const mainRepeat = document.getElementById('toggleRepeatBtn');
+    
     if (mainShuffle) bpShuffle.classList.toggle('active', mainShuffle.classList.contains('active'));
     if (mainRepeat) bpRepeat.classList.toggle('active', mainRepeat.classList.contains('active-repeat'));
   }
 
-  // --- THE FIX: TRACK NAVIGATION LOGIC ---
-  
-  function playNewTrack(index) {
-    if (typeof currentQueue === 'undefined' || !currentQueue[index]) return;
-    
-    // Update the global index
-    window.currentTrackIndex = index;
-    const trackId = currentQueue[window.currentTrackIndex];
-    const track = (window.allTracks || []).find(t => t.id === trackId);
-
-    if (track) {
-        // 1. Update source (assumes track object has .file or .url)
-        mainPlayer.src = track.file || track.url; 
-        mainPlayer.load();
-        
-        // 2. Play
-        mainPlayer.play().catch(e => console.log("Playback failed:", e));
-        
-        // 3. Sync UI
-        updateBigPlayerMetadata();
-        syncUIState();
-        
-        // 4. Optional: If you have a global play function in your main app, 
-        // you might want to call it here to keep everything in sync:
-        // if (typeof playTrack === 'function') playTrack(trackId);
-    }
-  }
-
-  bpNext.onclick = () => {
-    let nextIndex = currentTrackIndex + 1;
-    // If at the end, loop back to the first song
-    if (nextIndex >= currentQueue.length) nextIndex = 0;
-    playNewTrack(nextIndex);
-  };
-
-  bpPrev.onclick = () => {
-    let prevIndex = currentTrackIndex - 1;
-    // If at the beginning, loop to the last song
-    if (prevIndex < 0) prevIndex = currentQueue.length - 1;
-    playNewTrack(prevIndex);
-  };
-
-  // --- END FIX ---
-
+  // 3. CORE CONTROLS
   bpPlayPause.onclick = () => mainPlayer.paused ? mainPlayer.play() : mainPlayer.pause();
+  
+  document.getElementById('bpPrev').onclick = () => {
+    document.getElementById('topPrevBtn')?.click() || document.getElementById('miniPrevBtn')?.click();
+  };
+  
+  document.getElementById('bpNext').onclick = () => {
+    document.getElementById('topNextBtn')?.click() || document.getElementById('miniNextBtn')?.click();
+  };
 
-  bpVolSlider.oninput = (e) => { mainPlayer.volume = e.target.value; };
+  bpVolSlider.oninput = (e) => {
+    mainPlayer.volume = e.target.value;
+  };
 
   bpShuffle.onclick = () => {
-    document.getElementById('shuffleBtn')?.click();
+    document.getElementById('shuffleBtn')?.click(); // Trigger main app logic
     syncUIState();
   };
 
   bpRepeat.onclick = () => {
-    document.getElementById('toggleRepeatBtn')?.click();
+    document.getElementById('toggleRepeatBtn')?.click(); // Trigger main app logic
     syncUIState();
   };
 
-  // 4. PROGRESS BAR
+  // 4. PROGRESS BAR (Smooth Scrubber)
   const bpProgressContainer = document.getElementById('bpProgressContainer');
   const bpProgressFill = document.getElementById('bpProgressFill');
   
@@ -7369,29 +7343,37 @@ window.addEventListener('load', () => {
     return `${min}:${s < 10 ? '0' : ''}${s}`;
   }
 
-  bpProgressContainer.addEventListener('mousedown', (e) => {
+  // Scrubber Click/Drag
+  const scrub = (e) => {
     const rect = bpProgressContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
     const perc = Math.max(0, Math.min(1, x / rect.width));
     mainPlayer.currentTime = perc * mainPlayer.duration;
-  });
+  };
 
+  bpProgressContainer.addEventListener('mousedown', scrub);
+  // Optional: Add drag listener here if needed
+
+  // 5. KEYBOARD SUPPORT
   document.addEventListener('keydown', (e) => {
     if (!bpScreen.classList.contains('show')) return;
-    if (e.code === 'Space') { e.preventDefault(); bpPlayPause.click(); }
-    else if (e.key === 'Escape') closeBigPlayer();
-    else if (e.key === 'ArrowRight') mainPlayer.currentTime += 5;
-    else if (e.key === 'ArrowLeft') mainPlayer.currentTime -= 5;
+    
+    if (e.code === 'Space') {
+      e.preventDefault();
+      bpPlayPause.click();
+    } else if (e.key === 'Escape') {
+      closeBigPlayer();
+    } else if (e.key === 'ArrowRight') {
+      mainPlayer.currentTime += 5;
+    } else if (e.key === 'ArrowLeft') {
+      mainPlayer.currentTime -= 5;
+    }
   });
 
+  // Events to keep metadata fresh
   mainPlayer.addEventListener('play', syncUIState);
   mainPlayer.addEventListener('pause', syncUIState);
-  
-  // Ensure the Big Player updates when a song ends naturally
-  mainPlayer.addEventListener('ended', () => {
-     // If repeat is NOT on, wait a moment then update metadata for the next track
-     setTimeout(updateBigPlayerMetadata, 100);
-  });
+  mainPlayer.addEventListener('trackchange', updateBigPlayerMetadata); // Custom event if your app has one
 });
 </script>
 <script src="audio-controls.js"></script>
